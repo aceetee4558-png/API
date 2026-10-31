@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flagpost – Task Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f2f5f3;--card:#fff;--ink:#14232b;--mute:#62767e;--line:#dbe3e0;--blue:#2f6fed;--red:#e5484d;--green:#2fa36b;--gold:#f0b429;--white:#c9d3d8}
+:root[data-theme=dark]{--bg:#0f1a20;--card:#16252d;--ink:#e8f0f2;--mute:#8aa0a8;--line:#24373f;--white:#e8f0f2}
+*{box-sizing:border-box;margin:0}
+body{font:16px/1.5 'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+h1,h2,h3,.brand{font-family:'Bricolage Grotesque',sans-serif;letter-spacing:-.02em}
+button,input,select{font:inherit;color:inherit}
+nav{display:flex;align-items:center;gap:20px;padding:16px 5vw;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+.brand{font-weight:800;font-size:22px;margin-right:auto}
+nav a{color:var(--mute);text-decoration:none;font-weight:500;padding:6px 2px;border-bottom:2px solid transparent}
+nav a.on{color:var(--ink);border-color:var(--gold)}
+.ico{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer}
+main{max-width:1100px;margin:0 auto;padding:32px 5vw 80px}
+.view{display:none}.view.on{display:block}
+.flags{display:flex;gap:6px;height:56px;margin:8px 0 12px}
+.flag{flex:1;border-radius:4px 4px 14px 4px;background:var(--line);position:relative;overflow:hidden}
+.flag i{position:absolute;inset:0;transform-origin:left;transform:scaleX(0);transition:transform .8s cubic-bezier(.2,.8,.2,1)}
+.hero h1{font-size:clamp(34px,6vw,64px);line-height:1.05;max-width:14ch;margin:24px 0 12px}
+.hero p{color:var(--mute);max-width:46ch}
+.quick{display:flex;gap:8px;margin:24px 0;max-width:560px}
+input[type=text],input[type=search],select{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:11px 14px;flex:1;min-width:0}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.btn{background:var(--ink);color:var(--bg);border:0;border-radius:10px;padding:11px 18px;font-weight:700;cursor:pointer}
+.btn.ghost{background:none;color:var(--ink);border:1px solid var(--line)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:20px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.stat b{display:block;font:800 34px 'Bricolage Grotesque'}
+.stat span{color:var(--mute);font-size:14px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin:14px 0}
+.panel h3{margin-bottom:12px;font-size:18px}
+.chart{display:flex;align-items:flex-end;gap:10px;height:120px}
+.bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;font-size:12px;color:var(--mute)}
+.bar i{width:100%;background:var(--blue);border-radius:6px 6px 2px 2px;min-height:3px;transition:height .6s}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tools input,.tools select{flex:1 1 160px}
+ul{list-style:none;padding:0}
+li.task{display:flex;align-items:center;gap:12px;padding:12px 4px;border-top:1px solid var(--line)}
+li.task:first-child{border-top:0}
+li.task .t{flex:1;min-width:0;overflow-wrap:anywhere}
+li.task.done .t{text-decoration:line-through;color:var(--mute)}
+li small{color:var(--mute);display:block;font-size:12px}
+input[type=checkbox]{width:20px;height:20px;accent-color:var(--green);cursor:pointer}
+.mini{background:none;border:0;cursor:pointer;color:var(--mute);padding:4px 8px;border-radius:6px}
+.mini:hover{background:var(--bg);color:var(--ink)}
+.empty,.err{text-align:center;color:var(--mute);padding:28px 8px}
+.err{color:#e5484d}
+.pals{display:flex;gap:12px;flex-wrap:wrap}
+.pal{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:12px 16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;font-weight:700;min-width:96px;transition:transform .2s,border-color .2s}
+.pal:hover{transform:translateY(-3px)}
+.pal.on{border-color:var(--ink)}
+.pal span{display:flex}
+.pal i{width:20px;height:20px;border-radius:50%;margin-left:-6px;border:2px solid var(--card)}
+.pal span i:first-child{margin-left:0}
+#toast{position:fixed;bottom:24px;left:50%;transform:translate(-50%,80px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;transition:.3s;opacity:0}
+#toast.show{transform:translate(-50%,0);opacity:1}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<nav>
+  <span class="brand">Flagpost</span>
+  <a href="#home" data-v="home">Home</a>
+  <a href="#dashboard" data-v="dashboard">Dashboard</a>
+  <button class="ico" id="theme" aria-label="Toggle dark mode">Dark</button>
+</nav>
+<main>
+ <section class="view" id="home">
+  <div class="hero">
+   <div class="flags" data-flags></div>
+   <h1>Raise a flag for every task you finish.</h1>
+   <p id="homeLine">Loading your tasks…</p>
+   <form class="quick" data-add>
+     <input type="text" placeholder="What needs doing?" maxlength="255" aria-label="New task" required>
+     <button class="btn">Add task</button>
+   </form>
+   <button class="btn ghost" onclick="location.hash='dashboard'">Open dashboard</button>
+   <h3 style="margin:40px 0 12px;font-size:18px">Pick your mood</h3>
+   <div class="pals" id="palettes"></div>
+  </div>
+ </section>
+
+ <section class="view" id="dashboard">
+  <h2>Dashboard</h2>
+  <div class="stats">
+    <div class="stat"><b id="sTotal">0</b><span>Total tasks</span></div>
+    <div class="stat"><b id="sDone">0</b><span>Completed</span></div>
+    <div class="stat"><b id="sOpen">0</b><span>Still open</span></div>
+    <div class="stat"><b id="sPct">0%</b><span>Done overall</span></div>
+  </div>
+  <div class="panel"><h3>Progress flags</h3><div class="flags" data-flags></div><span id="flagNote" style="color:var(--mute);font-size:14px"></span></div>
+  <div class="panel"><h3>Tasks created, last 7 days</h3><div class="chart" id="chart"></div></div>
+  <div class="panel">
+   <h3>Your tasks</h3>
+   <form class="quick" data-add style="margin-top:0;max-width:none">
+     <input type="text" id="dashInput" placeholder="Add a task (press N to jump here)" maxlength="255" required>
+     <button class="btn">Add task</button>
+   </form>
+   <div class="tools">
+     <input type="search" id="q" placeholder="Search tasks">
+     <select id="filter"><option value="all">All</option><option value="open">Open</option><option value="done">Completed</option></select>
+     <select id="sort"><option value="new">Newest first</option><option value="old">Oldest first</option><option value="az">A to Z</option></select>
+     <button class="btn ghost" id="export">Export JSON</button>
+   </div>
+   <ul id="list"></ul>
+  </div>
+ </section>
+</main>
+<div id="toast" role="status"></div>
+
+<script>
+const API = '/tasks';           // same origin: Express serves this page
+let tasks = [];
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast.id);toast.id=setTimeout(()=>t.classList.remove('show'),2200)}
+
+async function api(path = '', method = 'GET', body){
+  const res = await fetch(API + path, {method, headers: body ? {'Content-Type':'application/json'} : {}, body: body ? JSON.stringify(body) : undefined});
+  if (res.status === 204) return null;
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Request failed (' + res.status + ')');
+  return data;
+}
+
+async function load(){
+  try { tasks = (await api()).map(t => ({...t, completed: !!t.completed})); render(); }
+  catch(e){ $('#list').innerHTML = '<li class="err">Cannot reach the API. Is the server running and is MySQL connected?</li>'; $('#homeLine').textContent = 'The API is not responding.'; }
+}
+
+/* ---------- render ---------- */
+const FLAGS = ['var(--blue)','var(--white)','var(--red)','var(--green)','var(--gold)'];
+function renderFlags(pct){
+  $$('[data-flags]').forEach(box => {
+    if (!box.children.length) box.innerHTML = FLAGS.map(c => `<div class="flag"><i style="background:${c}"></i></div>`).join('');
+    $$('.flag i', box).forEach((el, i) => {
+      const fill = Math.min(1, Math.max(0, pct / 20 - i));   // each flag = 20%
+      el.style.transform = `scaleX(${fill})`;
+    });
+  });
+}
+function render(){
+  const total = tasks.length, done = tasks.filter(t => t.completed).length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  $('#sTotal').textContent = total; $('#sDone').textContent = done;
+  $('#sOpen').textContent = total - done; $('#sPct').textContent = pct + '%';
+  $('#homeLine').textContent = total ? `${done} of ${total} tasks done. ${total - done} still open.` : 'No tasks yet. Add your first one below.';
+  $('#flagNote').textContent = pct === 100 && total ? 'All five flags are up. Nice work.' : `${5 - Math.floor(pct / 20)} flags to go`;
+  renderFlags(pct); renderChart(); renderList();
+}
+function renderChart(){
+  const days = [...Array(7)].map((_, i) => { const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - (6 - i)); return d; });
+  const counts = days.map(d => tasks.filter(t => new Date(t.created_at).toDateString() === d.toDateString()).length);
+  const max = Math.max(1, ...counts);
+  $('#chart').innerHTML = days.map((d, i) => `<div class="bar">${counts[i]}<i style="height:${counts[i] / max * 80}%"></i>${d.toLocaleDateString(undefined,{weekday:'short'})}</div>`).join('');
+}
+function renderList(){
+  const q = $('#q').value.trim().toLowerCase(), f = $('#filter').value, s = $('#sort').value;
+  let rows = tasks.filter(t => t.title.toLowerCase().includes(q) && (f === 'all' || (f === 'done') === t.completed));
+  rows.sort((a, b) => s === 'az' ? a.title.localeCompare(b.title) : s === 'old' ? new Date(a.created_at) - new Date(b.created_at) : new Date(b.created_at) - new Date(a.created_at));
+  $('#list').innerHTML = rows.length ? rows.map(t => `
+    <li class="task ${t.completed ? 'done' : ''}" data-id="${t.id}">
+      <input type="checkbox" ${t.completed ? 'checked' : ''} aria-label="Mark complete">
+      <div class="t">${esc(t.title)}<small>#${t.id} · ${new Date(t.created_at).toLocaleString()}</small></div>
+      <button class="mini" data-act="edit">Edit</button>
+      <button class="mini" data-act="del">Delete</button>
+    </li>`).join('') : '<li class="empty">Nothing matches. Add a task or change the filter.</li>';
+}
+
+/* ---------- actions (each one calls an endpoint from the practical) ---------- */
+$$('[data-add]').forEach(form => form.addEventListener('submit', async e => {
+  e.preventDefault();
+  const input = $('input', form), title = input.value.trim();
+  if (!title) return;
+  try { const t = await api('', 'POST', {title}); tasks.unshift({...t, completed: !!t.completed}); input.value = ''; render(); toast('Task added'); }
+  catch(err){ toast(err.message); }
+}));
+$('#list').addEventListener('change', async e => {
+  const id = e.target.closest('li').dataset.id;
+  try { const t = await api('/' + id, 'PATCH', {completed: e.target.checked}); Object.assign(tasks.find(x => x.id == id), t, {completed: !!t.completed}); render(); toast(t.completed ? 'Flag raised' : 'Marked open'); }
+  catch(err){ toast(err.message); render(); }
+});
+$('#list').addEventListener('click', async e => {
+  const act = e.target.dataset.act; if (!act) return;
+  const id = e.target.closest('li').dataset.id, task = tasks.find(x => x.id == id);
+  try {
+    if (act === 'del') { if (!confirm('Delete this task?')) return; await api('/' + id, 'DELETE'); tasks = tasks.filter(x => x.id != id); render(); toast('Task deleted'); }
+    if (act === 'edit') { const title = prompt('Edit task title', task.title); if (title === null) return; const t = await api('/' + id, 'PATCH', {title}); Object.assign(task, t, {completed: !!t.completed}); render(); toast('Task updated'); }
+  } catch(err){ toast(err.message); }
+});
+['q','filter','sort'].forEach(id => $('#' + id).addEventListener('input', renderList));
+$('#export').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(tasks, null, 2)], {type: 'application/json'}));
+  a.download = 'tasks.json'; a.click();
+};
+
+/* ---------- theme picker (home page) ---------- */
+const BASE = {
+  classic: {name:'Classic', c:['#2f6fed','#c9d3d8','#e5484d','#2fa36b','#f0b429'], L:{bg:'#f2f5f3',card:'#ffffff',ink:'#14232b',mute:'#62767e',line:'#dbe3e0'}, D:{bg:'#0f1a20',card:'#16252d',ink:'#e8f0f2',mute:'#8aa0a8',line:'#24373f'}},
+  ocean:   {name:'Ocean',   c:['#1e6fd9','#8fe3cf','#0b4f8a','#0f9fa8','#35c4c4'], L:{bg:'#eaf5f8',card:'#ffffff',ink:'#0b2a3a',mute:'#5a7886',line:'#cfe3ea'}, D:{bg:'#071c27',card:'#0d2c3b',ink:'#e6f6f8',mute:'#7fa6b2',line:'#1a4557'}},
+  sunset:  {name:'Sunset',  c:['#ff7a45','#ffd6a5','#e5484d','#ff9f1c','#f4c430'], L:{bg:'#fff3ea',card:'#ffffff',ink:'#3a1f14',mute:'#8a6a5c',line:'#f1d9c9'}, D:{bg:'#241008',card:'#35190e',ink:'#fdeee4',mute:'#c19a86',line:'#4d2a1b'}},
+  forest:  {name:'Forest',  c:['#2fa36b','#cfe8d5','#1f6f4a','#8bc34a','#f0b429'], L:{bg:'#eef5ee',card:'#ffffff',ink:'#13261a',mute:'#5f7a67',line:'#d3e3d6'}, D:{bg:'#0c1a12',card:'#13281b',ink:'#e8f5ea',mute:'#86a68f',line:'#21402c'}},
+  purple:  {name:'Purple',  c:['#7c5cff','#e3d9ff','#e04ea6','#a45cff','#ff9acb'], L:{bg:'#f4f0fb',card:'#ffffff',ink:'#1f1537',mute:'#6f6490',line:'#e0d8f2'}, D:{bg:'#140c24',card:'#201436',ink:'#f1ebff',mute:'#a99cc9',line:'#35254f'}}
+};
+let pal = 'classic';
+try { const saved = localStorage.getItem('palette'); if (BASE[saved]) pal = saved; } catch {}
+function applyPalette(){
+  const p = BASE[pal], mode = document.documentElement.dataset.theme === 'dark' ? 'D' : 'L';
+  const v = {...p[mode], blue:p.c[0], white:p.c[1], red:p.c[2], green:p.c[3], gold:p.c[4]};
+  for (const k in v) document.documentElement.style.setProperty('--' + k, v[k]);
+}
+function drawPicker(){
+  $('#palettes').innerHTML = Object.entries(BASE).map(([k, p]) =>
+    `<button class="pal ${k === pal ? 'on' : ''}" data-pal="${k}" aria-pressed="${k === pal}"><span>${p.c.slice(0,3).map(c => `<i style="background:${c}"></i>`).join('')}</span>${p.name}</button>`).join('');
+}
+$('#palettes').addEventListener('click', e => {
+  const b = e.target.closest('[data-pal]'); if (!b) return;
+  pal = b.dataset.pal; try { localStorage.setItem('palette', pal); } catch {}
+  applyPalette(); drawPicker(); toast('Theme: ' + BASE[pal].name);
+});
+
+/* ---------- routing, theme, shortcut ---------- */
+function route(){
+  const v = location.hash.slice(1) === 'dashboard' ? 'dashboard' : 'home';
+  $$('.view').forEach(s => s.classList.toggle('on', s.id === v));
+  $$('nav a').forEach(a => a.classList.toggle('on', a.dataset.v === v));
+}
+addEventListener('hashchange', route);
+const setTheme = t => { document.documentElement.dataset.theme = t; $('#theme').textContent = t === 'dark' ? 'Light' : 'Dark'; applyPalette(); try{localStorage.setItem('theme', t)}catch{} };
+$('#theme').onclick = () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+try { setTheme(localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light')); } catch { setTheme('light'); }
+addEventListener('keydown', e => { if (e.key === 'n' && !/INPUT|SELECT/.test(document.activeElement.tagName)) { e.preventDefault(); location.hash = 'dashboard'; setTimeout(() => $('#dashInput').focus(), 50); } });
+drawPicker(); route(); load();
+</script>
+</body>
+</html>
